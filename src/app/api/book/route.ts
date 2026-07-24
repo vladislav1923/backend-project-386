@@ -32,15 +32,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    const booking = createBooking({
-      slotId: body.slotId,
-      eventTypeId: body.eventTypeId,
-      guest: {},
-    });
+    const booking = createBooking(
+      {
+        slotId: body.slotId,
+        eventTypeId: body.eventTypeId,
+        guest: {},
+      },
+      eventType.durationMinutes,
+    );
     return Response.json(booking);
   } catch (error) {
     if (error instanceof Error && error.message === "SLOT_OCCUPIED") {
-      return Response.json({ message: "Slot is already booked" }, { status: 409 });
+      return Response.json(
+        {
+          message:
+            "This time overlaps another booking. Guests cannot book events at the same time.",
+        },
+        { status: 409 },
+      );
+    }
+    if (error instanceof Error && error.message === "INVALID_SLOT") {
+      return Response.json({ message: "Invalid slot" }, { status: 400 });
     }
     throw error;
   }

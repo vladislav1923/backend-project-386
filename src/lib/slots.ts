@@ -1,4 +1,4 @@
-import { isSlotBooked } from "@/lib/bookings-store";
+import { isTimeOccupied } from "@/lib/bookings-store";
 import type { EventType, Slot } from "@/lib/types";
 
 const DAY_START_HOUR = 9;
@@ -82,11 +82,11 @@ export function generateAvailableSlots(
 
   while (cursor.getTime() + duration * 60_000 <= dayEnd.getTime()) {
     if (cursor.getTime() > now.getTime()) {
-      const datetime = cursor.toISOString();
-      const id = `${eventType.id}:${datetime}`;
-      if (!isSlotBooked(id)) {
+      // Hide times that overlap any existing booking (any event type).
+      if (!isTimeOccupied(cursor, duration)) {
+        const datetime = cursor.toISOString();
         slots.push({
-          id,
+          id: `${eventType.id}:${datetime}`,
           datetime,
           eventTypeId: eventType.id,
         });
