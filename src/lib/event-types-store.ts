@@ -1,4 +1,4 @@
-import type { CreateEventTypeRequest, EventType, User } from "@/lib/types";
+import type { CreateEventTypeRequest, EventType } from "@/lib/types";
 
 const globalStore = globalThis as typeof globalThis & {
   __eventTypesStore?: EventType[];
@@ -11,13 +11,12 @@ function getStore(): EventType[] {
   return globalStore.__eventTypesStore;
 }
 
-const defaultUser: User = {
-  id: "user-1",
-  name: "Calendar Owner",
-};
-
 export function listEventTypes(): EventType[] {
   return [...getStore()];
+}
+
+export function getEventType(id: string): EventType | undefined {
+  return getStore().find((eventType) => eventType.id === id);
 }
 
 export function createEventType(body: CreateEventTypeRequest): EventType {
@@ -26,7 +25,6 @@ export function createEventType(body: CreateEventTypeRequest): EventType {
     title: body.title,
     description: body.description,
     durationMinutes: body.durationMinutes,
-    user: defaultUser,
   };
 
   getStore().unshift(eventType);

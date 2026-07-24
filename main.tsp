@@ -18,14 +18,12 @@ model EventType {
   title: string;
   description: string;
   durationMinutes: int32;
-  user: User;
 }
 
 model Slot {
   id: string;
   datetime: utcDateTime;
   eventTypeId: string;
-  user: User;
 }
 
 model Guest {}

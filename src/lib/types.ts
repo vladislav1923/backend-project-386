@@ -10,11 +10,31 @@ export type EventType = {
   title: string;
   description: string;
   durationMinutes: number;
-  user: User;
+};
+
+export type Slot = {
+  id: string;
+  datetime: string;
+  eventTypeId: string;
+};
+
+export type Guest = Record<string, never>;
+
+export type Booking = {
+  id: string;
+  slotId: string;
+  eventTypeId: string;
+  guest: Guest;
 };
 
 export type CreateEventTypeRequest = {
   title: string;
   description: string;
   durationMinutes: number;
+};
+
+export type BookRequest = {
+  slotId: string;
+  eventTypeId: string;
+  guest: Guest;
 };
