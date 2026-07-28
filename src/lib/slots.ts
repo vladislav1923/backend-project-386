@@ -1,63 +1,62 @@
 import { isTimeOccupied } from "@/lib/bookings-store";
+import {
+  DAY_END_HOUR,
+  DAY_START_HOUR,
+  moscowDateOnly,
+  moscowDateTime,
+} from "@/lib/moscow-time";
 import type { EventType, Slot } from "@/lib/types";
 
-const DAY_START_HOUR = 9;
-const DAY_END_HOUR = 17;
-
-function startOfLocalDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function parseDateOnly(dateOnly: string): Date | null {
+function parseDateOnly(dateOnly: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOnly);
   if (!match) {
     return null;
   }
 
   const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
+  const month = Number(match[2]);
   const day = Number(match[3]);
-  const date = new Date(year, month, day);
+  const probe = moscowDateTime(dateOnly, 12, 0);
 
   if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month ||
-    date.getDate() !== day
+    Number.isNaN(probe.getTime()) ||
+    moscowDateOnly(probe) !==
+      `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
   ) {
     return null;
   }
 
-  return date;
+  return dateOnly;
 }
 
-function toDateOnly(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function addMoscowDays(dateOnly: string, days: number): string {
+  const noon = moscowDateTime(dateOnly, 12, 0);
+  noon.setUTCDate(noon.getUTCDate() + days);
+  return moscowDateOnly(noon);
 }
 
 export function formatDateOnly(date: Date): string {
-  return toDateOnly(date);
+  return moscowDateOnly(date);
 }
 
 export function bookingWindowBounds(from = new Date()): {
-  start: Date;
-  end: Date;
+  start: string;
+  end: string;
 } {
-  const start = startOfLocalDay(from);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 13);
+  const start = moscowDateOnly(from);
+  const end = addMoscowDays(start, 13);
   return { start, end };
 }
 
-export function isDateInBookingWindow(date: Date, from = new Date()): boolean {
+export function isDateInBookingWindow(
+  dateOnly: string,
+  from = new Date(),
+): boolean {
   const { start, end } = bookingWindowBounds(from);
-  const day = startOfLocalDay(date);
-  return day >= start && day <= end;
+  return dateOnly >= start && dateOnly <= end;
 }
 
-/** Consecutive slots for a day, spaced by event duration. */
+/** Consecutive slots for a Moscow calendar day, 10:00–17:00 Moscow time. */
 export function generateAvailableSlots(
   eventType: EventType,
   dateOnly: string,
@@ -74,15 +73,11 @@ export function generateAvailableSlots(
   }
 
   const slots: Slot[] = [];
-  const cursor = new Date(day);
-  cursor.setHours(DAY_START_HOUR, 0, 0, 0);
-
-  const dayEnd = new Date(day);
-  dayEnd.setHours(DAY_END_HOUR, 0, 0, 0);
+  let cursor = moscowDateTime(day, DAY_START_HOUR, 0);
+  const dayEnd = moscowDateTime(day, DAY_END_HOUR, 0);
 
   while (cursor.getTime() + duration * 60_000 <= dayEnd.getTime()) {
     if (cursor.getTime() > now.getTime()) {
-      // Hide times that overlap any existing booking (any event type).
       if (!isTimeOccupied(cursor, duration)) {
         const datetime = cursor.toISOString();
         slots.push({
@@ -93,7 +88,7 @@ export function generateAvailableSlots(
       }
     }
 
-    cursor.setMinutes(cursor.getMinutes() + duration);
+    cursor = new Date(cursor.getTime() + duration * 60_000);
   }
 
   return slots;
@@ -115,7 +110,7 @@ export function findSlot(
     return undefined;
   }
 
-  return generateAvailableSlots(eventType, toDateOnly(date), now).find(
+  return generateAvailableSlots(eventType, moscowDateOnly(date), now).find(
     (slot) => slot.id === slotId,
   );
 }

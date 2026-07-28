@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  formatMoscowDateTime,
+  formatMoscowTime,
+} from "@/lib/moscow-time";
+import type { BookedEvent, Booking, EventType, Slot } from "@/lib/types";
+import {
+  ArrowLeftIcon,
+  CalendarDaysIcon,
+  CheckCircle2Icon,
+  ClockIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays, format, startOfDay } from "date-fns";
 import { EventTypeCard } from "@/components/events/event-type-card";
@@ -20,13 +31,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { BookedEvent, Booking, EventType, Slot } from "@/lib/types";
-import {
-  ArrowLeftIcon,
-  CalendarDaysIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-} from "lucide-react";
 
 type Step = "list" | "calendar" | "slots" | "confirmed";
 
@@ -238,7 +242,7 @@ export function GuestBookingPage() {
                 "Select a day within the next two weeks."}
               {step === "slots" &&
                 selectedDay &&
-                `Available ${selectedEventType?.durationMinutes}-minute slots on ${format(selectedDay, "EEEE, MMM d")}.`}
+                `Available ${selectedEventType?.durationMinutes}-minute slots on ${format(selectedDay, "EEEE, MMM d")} (10:00–17:00 Moscow time).`}
               {step === "confirmed" &&
                 "Your meeting is confirmed. See you then."}
             </p>
@@ -385,7 +389,7 @@ export function GuestBookingPage() {
             ) : (
               <ul className="flex list-none flex-col gap-2">
                 {slots.map((slot) => {
-                  const time = format(new Date(slot.datetime), "h:mm a");
+                  const time = formatMoscowTime(new Date(slot.datetime));
                   const isSelected = selectedSlot?.id === slot.id;
                   return (
                     <li key={slot.id}>
@@ -421,8 +425,8 @@ export function GuestBookingPage() {
               </div>
               <CardTitle>{selectedEventType.title}</CardTitle>
               <CardDescription>
-                {format(new Date(selectedSlot.datetime), "EEEE, MMM d · h:mm a")}{" "}
-                · {selectedEventType.durationMinutes} min
+                {formatMoscowDateTime(new Date(selectedSlot.datetime))} ·{" "}
+                {selectedEventType.durationMinutes} min
               </CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">

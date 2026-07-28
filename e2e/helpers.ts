@@ -1,5 +1,9 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { addDays, format } from "date-fns";
+import {
+  formatMoscowDateTime,
+  formatMoscowTime,
+} from "../src/lib/moscow-time";
 import type { EventType, Slot } from "../src/lib/types";
 
 export type CreateEventTypeInput = {
@@ -15,6 +19,14 @@ export function uniqueTitle(prefix: string): string {
 /** Prefer tomorrow so weekday business-hour slots are available. */
 export function bookingDay(from = new Date()): Date {
   return addDays(from, 1);
+}
+
+export function slotTimeLabel(datetime: string): string {
+  return formatMoscowTime(new Date(datetime));
+}
+
+export function slotDateTimeLabel(datetime: string): string {
+  return formatMoscowDateTime(new Date(datetime));
 }
 
 export async function createEventTypeViaApi(

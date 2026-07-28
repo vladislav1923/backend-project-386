@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -13,6 +12,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { formatMoscowDateTime } from "@/lib/moscow-time";
 import type { BookedEvent } from "@/lib/types";
 import { CalendarCheckIcon, ClockIcon } from "lucide-react";
 
@@ -74,7 +74,7 @@ export function BookedEventsList({
                   </Badge>
                 </div>
                 <CardDescription>
-                  {format(start, "EEEE, MMM d · h:mm a")}
+                  {formatMoscowDateTime(start)}
                   {isPast ? " · past" : ""}
                 </CardDescription>
               </CardHeader>

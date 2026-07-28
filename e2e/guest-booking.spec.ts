@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { format } from "date-fns";
 import {
   bookViaApi,
   bookingDay,
@@ -7,6 +6,8 @@ import {
   listBookingsViaApi,
   listSlotsViaApi,
   selectCalendarDay,
+  slotDateTimeLabel,
+  slotTimeLabel,
   uniqueTitle,
 } from "./helpers";
 
@@ -25,8 +26,9 @@ test.describe("guest booking", () => {
     const day = bookingDay();
     const slots = await listSlotsViaApi(request, eventType.id, day);
     expect(slots.length).toBeGreaterThan(0);
+    expect(slotTimeLabel(slots[0]!.datetime)).toBe("10:00");
     const targetSlot = slots[0]!;
-    const slotLabel = format(new Date(targetSlot.datetime), "h:mm a");
+    const slotLabel = slotTimeLabel(targetSlot.datetime);
 
     await page.goto("/");
     await expect(
@@ -44,13 +46,13 @@ test.describe("guest booking", () => {
       page.getByText(new RegExp(`${eventType.durationMinutes}-minute slots`, "i")),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: new RegExp(slotLabel, "i") }).click();
+    await page.getByRole("button", { name: new RegExp(slotLabel) }).click();
 
     await expect(
       page.getByRole("heading", { name: /you're booked/i }),
     ).toBeVisible();
     await expect(page.getByText(title)).toBeVisible();
-    await expect(page.getByText(new RegExp(slotLabel, "i"))).toBeVisible();
+    await expect(page.getByText(new RegExp(slotLabel))).toBeVisible();
     await expect(page.getByText(/booking id/i)).toBeVisible();
 
     await page.getByRole("button", { name: /book another/i }).click();
@@ -93,23 +95,20 @@ test.describe("guest booking", () => {
       remainingForSecond.some((slot) => slot.datetime === occupied.datetime),
     ).toBe(false);
 
-    const occupiedLabel = format(new Date(occupied.datetime), "h:mm a");
+    const occupiedLabel = slotTimeLabel(occupied.datetime);
 
     await page.goto("/");
     await page.getByRole("button", { name: secondTitle }).click();
     await selectCalendarDay(page, day);
 
     await expect(
-      page.getByRole("button", { name: new RegExp(occupiedLabel, "i") }),
+      page.getByRole("button", { name: new RegExp(occupiedLabel) }),
     ).toHaveCount(0);
 
     if (remainingForSecond.length > 0) {
-      const freeLabel = format(
-        new Date(remainingForSecond[0]!.datetime),
-        "h:mm a",
-      );
+      const freeLabel = slotTimeLabel(remainingForSecond[0]!.datetime);
       await expect(
-        page.getByRole("button", { name: new RegExp(freeLabel, "i") }),
+        page.getByRole("button", { name: new RegExp(freeLabel) }),
       ).toBeVisible();
     }
   });
@@ -131,7 +130,7 @@ test.describe("guest booking", () => {
     const bookings = await listBookingsViaApi(request);
     expect(bookings.some((booking) => booking.title === title)).toBe(true);
 
-    const when = format(new Date(slot.datetime), "EEEE, MMM d · h:mm a");
+    const when = slotDateTimeLabel(slot.datetime);
 
     await page.goto("/");
     const bookedSection = page
