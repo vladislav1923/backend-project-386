@@ -36,7 +36,10 @@ jobs:
 
       - name: Release PR summary
         if: ${{ steps.release.outputs.prs_created == 'true' || steps.release.outputs.pr != '' }}
+        env:
+          PRS_CREATED: ${{ steps.release.outputs.prs_created }}
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
         run: |
           echo "Release Please opened or updated a Release PR."
-          echo "prs_created=${{ steps.release.outputs.prs_created }}"
-          echo "pr=${{ steps.release.outputs.pr }}"
+          echo "prs_created=${PRS_CREATED}"
+          echo "pr=${RELEASE_PR}"
