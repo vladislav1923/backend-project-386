@@ -2,6 +2,9 @@
 ### Hexlet tests and linter status:
 [![Actions Status](https://github.com/vladislav1923/backend-project-386/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/vladislav1923/backend-project-386/actions)
 
+### Demo
+Deployed on Render: [https://backend-project-386.onrender.com/](https://backend-project-386.onrender.com/)
+
 ## Getting Started
 
 First, run the development server:
