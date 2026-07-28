@@ -5,6 +5,8 @@ export const metadata = {
   description: "Manage bookable event types",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function EventsPage() {
   return <EventsPageClient />;
 }
