@@ -1,5 +1,5 @@
 import { getEventType } from "@/lib/event-types-store";
-import type { Booking, BookRequest } from "@/lib/types";
+import type { BookedEvent, Booking, BookRequest } from "@/lib/types";
 
 const globalStore = globalThis as typeof globalThis & {
   __bookingsStore?: Booking[];
@@ -83,6 +83,43 @@ export function isTimeOccupied(
   durationMinutes: number,
 ): boolean {
   return Boolean(findOverlappingBooking(start, durationMinutes));
+}
+
+export function toBookedEvent(booking: Booking): BookedEvent | null {
+  const start = parseSlotDatetime(booking.slotId);
+  const eventType = getEventType(booking.eventTypeId);
+  if (!start || !eventType) {
+    return null;
+  }
+
+  return {
+    ...booking,
+    title: eventType.title,
+    description: eventType.description,
+    durationMinutes: eventType.durationMinutes,
+    datetime: start.toISOString(),
+  };
+}
+
+/** Upcoming bookings first, then past; within each group by start time. */
+export function listBookedEvents(): BookedEvent[] {
+  const now = Date.now();
+
+  return listBookings()
+    .map(toBookedEvent)
+    .filter((item): item is BookedEvent => item !== null)
+    .sort((a, b) => {
+      const aTime = new Date(a.datetime).getTime();
+      const bTime = new Date(b.datetime).getTime();
+      const aUpcoming = aTime >= now;
+      const bUpcoming = bTime >= now;
+
+      if (aUpcoming !== bUpcoming) {
+        return aUpcoming ? -1 : 1;
+      }
+
+      return aUpcoming ? aTime - bTime : bTime - aTime;
+    });
 }
 
 export function createBooking(

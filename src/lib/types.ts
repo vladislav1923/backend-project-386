@@ -38,3 +38,11 @@ export type BookRequest = {
   eventTypeId: string;
   guest: Guest;
 };
+
+/** Booking enriched for UI lists (title + start time). */
+export type BookedEvent = Booking & {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  datetime: string;
+};

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays, format, startOfDay } from "date-fns";
 import { EventTypeCard } from "@/components/events/event-type-card";
+import { BookedEventsList } from "@/components/guest/booked-events-list";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -19,7 +20,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { Booking, EventType, Slot } from "@/lib/types";
+import type { BookedEvent, Booking, EventType, Slot } from "@/lib/types";
 import {
   ArrowLeftIcon,
   CalendarDaysIcon,
@@ -35,7 +36,9 @@ function toDateOnly(date: Date): string {
 
 export function GuestBookingPage() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [bookings, setBookings] = useState<BookedEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [step, setStep] = useState<Step>("list");
@@ -51,6 +54,22 @@ export function GuestBookingPage() {
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const windowEnd = useMemo(() => addDays(today, 13), [today]);
+
+  const loadBookings = useCallback(async () => {
+    setBookingsLoading(true);
+    try {
+      const response = await fetch("/api/bookings");
+      if (!response.ok) {
+        throw new Error("Failed to load bookings");
+      }
+      const data = (await response.json()) as BookedEvent[];
+      setBookings(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load bookings");
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +96,11 @@ export function GuestBookingPage() {
     }
 
     void load();
+    void loadBookings();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadBookings]);
 
   useEffect(() => {
     if (!selectedEventType || !selectedDay || step !== "slots") {
@@ -172,6 +192,7 @@ export function GuestBookingPage() {
       const created = (await response.json()) as Booking;
       setBooking(created);
       setStep("confirmed");
+      void loadBookings();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to book");
       setSlots((current) => current.filter((item) => item.id !== slot.id));
@@ -188,6 +209,7 @@ export function GuestBookingPage() {
     setBooking(null);
     setSlots([]);
     setError(null);
+    void loadBookings();
   }
 
   return (
@@ -252,40 +274,68 @@ export function GuestBookingPage() {
         ) : null}
 
         {step === "list" ? (
-          loading ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[0, 1].map((key) => (
-                <div
-                  key={key}
-                  className="h-36 animate-pulse rounded-xl bg-muted/70 ring-1 ring-foreground/5"
-                />
-              ))}
-            </div>
-          ) : eventTypes.length === 0 ? (
-            <Empty className="border border-dashed bg-card/60 py-16">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <CalendarDaysIcon />
-                </EmptyMedia>
-                <EmptyTitle>No events to book</EmptyTitle>
-                <EmptyDescription>
-                  An organizer needs to create event types before guests can
-                  book.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <ul className="grid list-none gap-4 sm:grid-cols-2">
-              {eventTypes.map((eventType) => (
-                <li key={eventType.id}>
-                  <EventTypeCard
-                    eventType={eventType}
-                    onSelect={selectEventType}
-                  />
-                </li>
-              ))}
-            </ul>
-          )
+          <div className="flex flex-col gap-10">
+            <section className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="font-heading text-xl font-semibold tracking-tight">
+                  Event types
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Select a type to book a time.
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[0, 1].map((key) => (
+                    <div
+                      key={key}
+                      className="h-36 animate-pulse rounded-xl bg-muted/70 ring-1 ring-foreground/5"
+                    />
+                  ))}
+                </div>
+              ) : eventTypes.length === 0 ? (
+                <Empty className="border border-dashed bg-card/60 py-16">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CalendarDaysIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>No events to book</EmptyTitle>
+                    <EmptyDescription>
+                      An organizer needs to create event types before guests can
+                      book.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <ul className="grid list-none gap-4 sm:grid-cols-2">
+                  {eventTypes.map((eventType) => (
+                    <li key={eventType.id}>
+                      <EventTypeCard
+                        eventType={eventType}
+                        onSelect={selectEventType}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="font-heading text-xl font-semibold tracking-tight">
+                  Booked events
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Upcoming meetings appear first.
+                </p>
+              </div>
+              <BookedEventsList
+                bookings={bookings}
+                loading={bookingsLoading}
+              />
+            </section>
+          </div>
         ) : null}
 
         {step === "calendar" && selectedEventType ? (

@@ -4,6 +4,7 @@ import {
   bookViaApi,
   bookingDay,
   createEventTypeViaApi,
+  listBookingsViaApi,
   listSlotsViaApi,
   selectCalendarDay,
   uniqueTitle,
@@ -51,6 +52,17 @@ test.describe("guest booking", () => {
     await expect(page.getByText(title)).toBeVisible();
     await expect(page.getByText(new RegExp(slotLabel, "i"))).toBeVisible();
     await expect(page.getByText(/booking id/i)).toBeVisible();
+
+    await page.getByRole("button", { name: /book another/i }).click();
+    await expect(
+      page.getByRole("heading", { name: /booked events/i }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator("section")
+        .filter({ has: page.getByRole("heading", { name: /booked events/i }) })
+        .getByText(title, { exact: true }),
+    ).toBeVisible();
   });
 
   test("hides overlapping times after another event is booked", async ({
@@ -100,5 +112,40 @@ test.describe("guest booking", () => {
         page.getByRole("button", { name: new RegExp(freeLabel, "i") }),
       ).toBeVisible();
     }
+  });
+
+  test("lists booked events on the index page", async ({ page, request }) => {
+    const title = uniqueTitle("Team sync");
+    const eventType = await createEventTypeViaApi(request, {
+      title,
+      durationMinutes: 30,
+    });
+
+    const day = bookingDay();
+    const slots = await listSlotsViaApi(request, eventType.id, day);
+    expect(slots.length).toBeGreaterThan(0);
+
+    const slot = slots[0]!;
+    await bookViaApi(request, slot);
+
+    const bookings = await listBookingsViaApi(request);
+    expect(bookings.some((booking) => booking.title === title)).toBe(true);
+
+    const when = format(new Date(slot.datetime), "EEEE, MMM d · h:mm a");
+
+    await page.goto("/");
+    const bookedSection = page
+      .locator("section")
+      .filter({ has: page.getByRole("heading", { name: /booked events/i }) });
+    const bookedItem = bookedSection
+      .getByRole("listitem")
+      .filter({ hasText: title });
+
+    await expect(
+      page.getByRole("heading", { name: /booked events/i }),
+    ).toBeVisible();
+    await expect(bookedItem.getByText(title, { exact: true })).toBeVisible();
+    await expect(bookedItem.getByText(when)).toBeVisible();
+    await expect(bookedItem.getByText("30 min")).toBeVisible();
   });
 });

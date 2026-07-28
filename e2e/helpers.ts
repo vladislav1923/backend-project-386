@@ -60,6 +60,18 @@ export async function bookViaApi(
   expect(response.ok()).toBeTruthy();
 }
 
+export async function listBookingsViaApi(
+  request: APIRequestContext,
+): Promise<Array<{ id: string; title: string; datetime: string }>> {
+  const response = await request.get("/api/bookings");
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as Array<{
+    id: string;
+    title: string;
+    datetime: string;
+  }>;
+}
+
 export async function selectCalendarDay(page: Page, day: Date): Promise<void> {
   const dataDay = day.toLocaleDateString();
   const dayButton = page.locator(`[data-day="${dataDay}"]`);

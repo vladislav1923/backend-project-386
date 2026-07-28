@@ -65,3 +65,8 @@ interface EventTypes {
 interface Book {
   @post create(@body body: BookRequest): Booking;
 }
+
+@route("/bookings")
+interface Bookings {
+  @get list(): Booking[];
+}
