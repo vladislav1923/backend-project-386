@@ -9,6 +9,13 @@ concurrency:
   group: release-please-${{ github.ref }}
   cancel-in-progress: true
 
+# Needs repo setting enabled:
+# Settings → Actions → General → Workflow permissions
+# → "Read and write permissions"
+# → "Allow GitHub Actions to create and approve pull requests"
+#
+# Optional: set secret RELEASE_PLEASE_TOKEN (PAT with contents + pull_requests)
+# if the default GITHUB_TOKEN is still blocked by org policy.
 permissions:
   contents: write
   issues: write
@@ -22,7 +29,7 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: main
